@@ -135,6 +135,25 @@
     font-size: 11px; color: #aaa; letter-spacing: 0.5px;
   }
 
+  .navbtn {
+    position: fixed; bottom: 14px; width: 48px; height: 48px;
+    border-radius: 50%; border: none;
+    background: rgba(31, 58, 110, 0.55); color: #fff;
+    font-size: 26px; line-height: 1; text-align: center;
+    cursor: pointer; opacity: 0.6; transition: opacity 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 0 3px 0; -webkit-tap-highlight-color: transparent;
+    z-index: 100; user-select: none;
+  }
+  .navbtn:hover, .navbtn:active { opacity: 1; }
+  .navbtn:disabled { opacity: 0.18; cursor: default; }
+  .navbtn.prev { left: 14px; }
+  .navbtn.next { right: 14px; }
+  @media (max-width: 600px) {
+    .navbtn { width: 56px; height: 56px; font-size: 30px; bottom: 18px; }
+    .navhint { display: none; }
+  }
+
   /* Concept blocks (used sparingly) */
   .concept-block {
     border: 1.5px solid var(--grid); border-radius: 6px;
@@ -2507,21 +2526,42 @@
   <div class="pagenum">46 / 46</div>
 </div>
 
-<div class="navhint">← / → to navigate · space advances</div>
+<div class="navhint">← / → to navigate · space advances · tap left/right edges on mobile</div>
+<button class="navbtn prev" type="button" aria-label="Previous slide" data-no-nav>‹</button>
+<button class="navbtn next" type="button" aria-label="Next slide" data-no-nav>›</button>
 
 <script>
 // ===================================================================
 // Slide navigation
 // ===================================================================
 const slides = [...document.querySelectorAll('.slide')];
+const prevBtn = document.querySelector('.navbtn.prev');
+const nextBtn = document.querySelector('.navbtn.next');
 let cur = 0;
-function show(i) { slides.forEach((s, idx) => s.classList.toggle('active', idx === i)); }
+function show(i) {
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((s, idx) => s.classList.toggle('active', idx === cur));
+  prevBtn.disabled = cur === 0;
+  nextBtn.disabled = cur === slides.length - 1;
+}
+function next() { show(cur + 1); }
+function prev() { show(cur - 1); }
+show(0);
+
 document.addEventListener('keydown', e => {
-  if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) {
-    cur = Math.min(slides.length - 1, cur + 1); show(cur); e.preventDefault();
-  } else if (['ArrowLeft', 'PageUp'].includes(e.key)) {
-    cur = Math.max(0, cur - 1); show(cur); e.preventDefault();
-  }
+  if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) { next(); e.preventDefault(); }
+  else if (['ArrowLeft', 'PageUp'].includes(e.key)) { prev(); e.preventDefault(); }
+});
+
+prevBtn.addEventListener('click', prev);
+nextBtn.addEventListener('click', next);
+
+// Tap on the slide to navigate (touch devices only — desktop keeps text-selection clean).
+// Left half = prev, right half = next. Ignore taps on links/buttons/opt-outs.
+document.addEventListener('pointerup', e => {
+  if (e.pointerType !== 'touch') return;
+  if (e.target.closest('a, button, input, textarea, select, [data-no-nav]')) return;
+  if (e.clientX < window.innerWidth / 2) prev(); else next();
 });
 
 // ===================================================================
